@@ -1,0 +1,35 @@
+#!/bin/bash
+
+if [ "x--help" = "x$1" ]; then
+  usage
+  exit
+fi
+
+BASEDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+DEV_APP_EXPOSED_PORT=${DEV_APP_EXPOSED_PORT-8080}
+DEV_DOCKER_PULL_ALWAYS=${DEV_DOCKER_PULL_ALWAYS-no}
+
+DEFAULT_APP_NAME=$(basename $PWD)
+DEFAULT_APP_NAME=${DEFAULT_APP_NAME}-app
+
+DEV_APP_NAME=${DEV_APP_NAME-$DEFAULT_APP_NAME}
+DEV_APP_NAME_RUNNING=${DEV_APP_NAME_RUNNING-$DEV_APP_NAME-running}
+
+INTERNAL_DOCKER_HOST=host.docker.internal
+
+###DEV_NEED_DOCKER_IP=$(docker run -rm alpine ping -c 1 host.docker.internal > /dev/null/ 2>&1 echo no || echo yes)
+
+if [ "$DEV_NEED_DOCKER_IP" == "yes" ]; then
+  INT=$(netstat -nr | grep "^0.0.0.0" | awk '{print $8}' | head -1)
+  if [ "x" = "x$INT" ]; then
+    INT=$(netstat -nr -f inet | grep "^default" | awk '{print $6}' | head -i)
+  fi
+  INTERNAL_DOCKER_HOST=$(ifconfig $INT | grep "inet " | awk '{print $2}')
+fi
+
+export SYMFONY_ENV=${SYMFONY_ENV-dev}
+export SYMFONY_DEBUG=${SYMFONY_DEBUG-1}
+export DEV_XDEBUG_CONFIG=${DEV_XDEBUG_CONFIG-remote_host=$INTERNAL_DOCKER_HOST remote_enable=1}
+export DEV_PHP_IDE_CONFIG=${SWITCH_PHP_IDE_CONFIG-serverName=docker}
+export DEV_UID=${UID}

@@ -1,0 +1,48 @@
+#!/bin/bash
+
+function usage {
+    echo "dev-exec will connect to the working docker container and run a command"
+    echo ""
+    echo "Examples:"
+    echo "\$ dev-exec bash"
+    echo "show all running processes on the container"
+    echo "\$ dev-exec ps aux"
+}
+
+set -e
+
+if [ "$(id -un)" == 'vagrant' ] ; then
+  . dev-common
+else
+  DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+  . $DIR/dev-common
+fi
+
+set +e
+
+DIRNAME=$(basename $PWD)
+RUNNING_NAME=$(docker ps -f name=$DIRNAME --format "{{.Names}}" | egrep "^DIRNAME\$")
+
+if [ 'x' = "x$RUNNING_NAME" ]; then
+  RUNNING_NAME=$(docker ps -f name=$DEV_APP_NAME_RUNNING --format "{{.Names}}" | egrep "DEV_APP_NAME_RUNNING\$")
+fi
+
+if [ 'x' = "x$RUNNING_NAME" ]; then
+  if [ ! -f "./.env" ] ; then
+    make .env
+  fi
+
+  export $(grep DOCKER_RUNNING_IMAGE_NAME .env | xargs)
+  RUNNING_NAME=$(docker ps -f name=$DOCKER_RUNNING_IMAGE_NAME --format "{{.Names}}" | egrep "^${DOCKER_RUNNING_IMAGE_NAME}\$")
+fi
+
+if [ 'x' = "x$RUNNING_NAME" ] ; then
+  echo "there is no docker container running for the default"
+  exit 1
+fi
+
+if [ "$#" -eq 0 ]; then
+  docker exec -it ${RUNNING_NAME} sh
+else
+  docker exec -it ${RUNNING_NAME} "$@"
+fi

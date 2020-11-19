@@ -1,0 +1,12 @@
+.DS_Store
+.idea
+
+/docker-compose.override.yaml
+/docker-compose.override.yml
+/Public/.ipynb_checkpoints
+/Public/ai-analytics
+/Public/expense_tracker
+/Public/karaokepal
+/Public/payments
+/Public/bundles
+/Public/stock_api
